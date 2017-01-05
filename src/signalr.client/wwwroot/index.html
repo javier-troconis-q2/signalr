@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<script src="/lib/jquery/dist/jquery.js"></script>
+<script src="http://ajax.aspnetcdn.com/ajax/signalr/jquery.signalr-2.2.1.js"></script>
+
+<script>
+
+    function getQueryVariable(variable) {
+        var query = window.location.search.substring(1),
+            vars = query.split("&"),
+            pair;
+        for (var i = 0; i < vars.length; i++) {
+            pair = vars[i].split("=");
+            if (pair[0] === variable) {
+                return unescape(pair[1]);
+            }
+        }
+    }
+
+    var getUrl = $.signalR.transports._logic.getUrl;
+    $.signalR.transports._logic.getUrl = function(connection, transport, reconnecting, poll, ajaxPost) {
+        var getUrlResult = getUrl(connection, transport, reconnecting, poll, ajaxPost);
+        var connectionUrl = new URL(connection.url);
+        return getUrlResult.replace(connection.appRelativeUrl, connectionUrl.pathname);
+    };
+
+
+   
+    $(function() {
+
+      
+        function connect(handlers) {
+            var connection;
+            (function connect() {
+                if (connection) {
+                    connection.stop();
+                }
+                connection = $.hubConnection('http://localhost:17000/backoffice-reporting/signalr',
+                {
+                    useDefaultPath: false,
+                    qs: 'tenantId=' + getQueryVariable('tenantId')
+                });
+                var proxy = connection.createHubProxy('eventHub');
+                connection
+                    .starting(function() {
+                        Object.keys(handlers).forEach(function(x) {
+                            proxy.on(x, handlers[x]);
+                        });
+                    })
+                    //.error(connect)
+                    //.reconnecting(connect)
+                    .received(function(data) {
+                       
+                    })
+                    .start({}, function() {
+                        Object.keys(handlers).forEach(function(x) {
+                            proxy.invoke('subscribe', x);
+                        });
+                    });
+            })();
+            return {
+                close: function() {
+                    connection.stop();
+                }
+            };
+        }
+
+        var connection1 = connect({
+            'product-created': function(data) {
+                console.log('handler1 - ' + data);
+            }
+        });
+
+        //setTimeout(connection1.close, 50000);
+
+        //var connection2 = connect({
+        //    'product-created': function(data) {
+        //        console.log('handler2 - ' + data);
+        //    }
+        //});
+
+        //setTimeout(connection2.close, 50000);
+    });
+
+
+</script>
+</head>
+<body>
+
+</body>
+</html>
