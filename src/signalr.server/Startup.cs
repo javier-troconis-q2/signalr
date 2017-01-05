@@ -54,15 +54,15 @@ namespace signalr.server
 
             app.UseWebSockets();
 
-            //app.Map("/x", x => x.UseMiddleware<X>());
-            //app.Map("/y", x => x.UseMiddleware<Y>());
+            app.Map("/x", x => x.UseMiddleware<X>());
+            app.Map("/y", x => x.UseMiddleware<Y>());
 
-            app.UseMiddleware<ReverseProxyMiddleware>();
-            app.Map("/_signalr", x =>
-            {
-                x.UseStaticFiles();
-                x.RunSignalR();
-            });
+            //app.UseMiddleware<ReverseProxyMiddleware>();
+            //app.Map("/_signalr", x =>
+            //{
+            //    x.UseStaticFiles();
+            //    x.RunSignalR();
+            //});
 
             var publishMessage = new PublishMessageAsync(async (tenantId, topic, message) =>
             {
@@ -152,8 +152,6 @@ namespace signalr.server
         public async Task Invoke(HttpContext context)
         {
             var socket = await context.WebSockets.AcceptWebSocketAsync();
-
-            await socket.ReceiveAsync(new ArraySegment<byte>(new byte[1024]), CancellationToken.None);
 
             Task.Run(async () =>
             {
